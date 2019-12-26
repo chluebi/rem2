@@ -45,7 +45,7 @@ def create_tables():
 def get_user(user_id):
 	conn = db_connect()
 	cur = conn.cursor()
-	command = '''SELECT * FROM users WHERE user_id = %s'''
+	command = '''SELECT * FROM users WHERE id = %s'''
 	cur.execute(command, (user_id,))
 	row = cur.fetchone()
 	cur.close()
@@ -56,7 +56,7 @@ def get_user(user_id):
 def create_user(user_id, user_timezone):
 	conn = db_connect()
 	cur = conn.cursor()
-	command = '''INSERT INTO users(user_id, user_timezone) VALUES (%s, %s);'''
+	command = '''INSERT INTO users(id, timezone) VALUES (%s, %s);'''
 	cur.execute(command, (user_id, user_timezone))
 	conn.commit()
 	cur.close()
@@ -67,8 +67,8 @@ def change_timezone(user_id, timezone):
 	conn = db_connect()
 	cur = conn.cursor()
 	command = '''UPDATE users
-                SET user_timezone = %s
-                WHERE user_id = %s;'''
+                SET timezone = %s
+                WHERE id = %s;'''
 	cur.execute(command, (timezone, user_id))
 	conn.commit()
 	cur.close()
