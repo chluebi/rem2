@@ -95,11 +95,11 @@ async def when(message, msg):
         return
 
     try:
-        distance = th.timedelta_into_seconds(msg[1])
+        distance = th.timedelta_string_into_seconds(msg[1])
         seconds_since_epoch = time.time() + distance
     except:
         try:
-            seconds_since_epoch = th.timestring_to_seconds(msg[1], user[1])
+            seconds_since_epoch = th.timepoint_string_to_seconds(msg[1], user[1])
             seconds_since_epoch = th.localize_seconds(seconds_since_epoch, user[1])
             distance = seconds_since_epoch - time.time()
         except Exception as e:
@@ -107,7 +107,6 @@ async def when(message, msg):
                 Be sure to use this format: ``{} when``'''.format(e, config['prefix']))
             return
 
-    seconds_since_epoch += 3600
     datetime_object = th.seconds_to_datetime(seconds_since_epoch)
     datetime_object = th.localize_datetime(datetime_object, user[1])
     timedelta_string = th.seconds_to_string(distance)

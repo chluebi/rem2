@@ -15,18 +15,18 @@ def create_tables():
 	commands = (
 		'''
 		CREATE TABLE users (
-			user_id bigint PRIMARY KEY,
-			user_timezone VARCHAR(255)
+			id bigint PRIMARY KEY,
+			timezone VARCHAR(255)
 		);
 		''',
 		'''
 		CREATE TABLE timers (
-			timer_id SERIAL,
-			timer_timestamp_created double precision,
-			timer_timestamp_triggered double precision,
-			timer_author_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-			timer_guild INTEGER,
-			timer_channel INTEGER,
+			id SERIAL,
+			timestamp_created double precision,
+			timestamp_triggered double precision,
+			author_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+			guild INTEGER,
+			channel INTEGER,
 			PRIMARY KEY (timer_id, timer_author_id)
 		);
 		''')
