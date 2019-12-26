@@ -61,3 +61,15 @@ def create_user(user_id, user_timezone):
 	conn.commit()
 	cur.close()
 	conn.close()
+
+
+def change_timezone(user_id, timezone):
+	conn = db_connect()
+	cur = conn.cursor()
+	command = '''UPDATE users
+                SET user_timezone = %s
+                WHERE user_id = %s;'''
+	cur.execute(command, (timezone, user_id))
+	conn.commit()
+	cur.close()
+	conn.close()
