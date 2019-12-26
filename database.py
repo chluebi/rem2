@@ -22,11 +22,13 @@ def create_tables():
 		'''
 		CREATE TABLE timers (
 			id SERIAL,
+			label text,
 			timestamp_created double precision,
 			timestamp_triggered double precision,
-			author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-			guild INTEGER,
-			channel INTEGER,
+			author_id bigint REFERENCES users(id) ON DELETE CASCADE,
+			guild bigint,
+			channel bigint,
+			message bigint,
 			PRIMARY KEY (id, author_id)
 		);
 		''')
