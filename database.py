@@ -24,10 +24,10 @@ def create_tables():
 			id SERIAL,
 			timestamp_created double precision,
 			timestamp_triggered double precision,
-			author_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+			author_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 			guild INTEGER,
 			channel INTEGER,
-			PRIMARY KEY (timer_id, timer_author_id)
+			PRIMARY KEY (id, author_id)
 		);
 		''')
 
