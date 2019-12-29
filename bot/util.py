@@ -1,16 +1,7 @@
 import json
+from lib.common import parse_config
 
-def parse_config():
-	with open('basic_config.json', 'r+') as f:
-		data = json.load(f)
-	return data
-
-def parse_db_config():
-	with open('database_config.json', 'r+') as f:
-		data = json.load(f)
-	return data
-
-config = parse_config()
+config = parse_config('discord')
 
 def parse_message(content):
 	l = len(config['prefix'])
@@ -25,11 +16,11 @@ def parse_message(content):
 
 	msg = ['']
 	quotes = False
-	for letter in content:
+	for i, letter in enumerate(content):
 		if not quotes:
 			if letter == ' ':
 				msg.append('')
-			elif letter in ['`', '“', '\"', '„', '\'']:
+			elif letter in ['`', '“', '\"', '„', '\''] and letter in content[i+1:]:
 				quotes = letter
 				if len(msg[-1]) > 0:
 					msg.append('')

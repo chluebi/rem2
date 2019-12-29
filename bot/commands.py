@@ -1,14 +1,14 @@
-import database as db
-from util import parse_config
-import timehandling as th
+import lib.database as db
+from lib.common import parse_config
+import lib.time_handle as th
 import time
 import pytz
 
-config = parse_config()
+config = parse_config('discord')
 
 commands = []
 
-async def execute_command(message, msg):
+async def execute_command(message, msg, db_connection):
     command = None
     for c in commands:
         if c.name == msg[0] or msg[0] in c.aliases:
@@ -20,7 +20,7 @@ async def execute_command(message, msg):
         return
 
     await message.add_reaction('✅')
-    await command.function(message, msg)
+    await command.function(message, msg, db_connection)
 
 
 def register_command(function, name=None, aliases=[]):
@@ -34,8 +34,8 @@ class Command:
         self.aliases = aliases
         commands.append(self)
 
-
-async def set_personal_reminder(message, msg):
+# WIP
+async def set_personal_reminder(message, msg, db_connection):
     user = db.get_user(message.author.id)
     if user is None:
         m = 'Your timezone isn\'t set yet. Run ``{} timezone`` to set it.'.format(config['prefix'])
@@ -43,10 +43,10 @@ async def set_personal_reminder(message, msg):
         await message.channel.send(m)
 
 
-async def set_timezone(message, msg):
-    user = db.get_user(message.author.id)
+async def set_timezone(message, msg, db_connection):
+    user = db.get_user(db_connection, message.author.id)
     if user is None:
-        db.create_user(message.author.id, 'Etc/GMT0')
+        db.create_user(db_connection, message.author.id, 'Etc/GMT0')
 
     if len(msg) < 2:
         m1 = f'Your current timezone is ``{user[1]}``. \n'
@@ -70,13 +70,13 @@ or your UTC offset (like ``+3``/``-3``)'''
                 timezone = gmt + '+' + str(-int(timezone))
             else:
                 timezone = gmt + '-' + str(-int(timezone))
-            db.change_timezone(message.author.id, timezone)
+            db.change_timezone(db_connection, message.author.id, timezone)
             m1 = f'Your timezone has been set to ``{timezone}``. \n'
             await message.channel.send(m1)
             return
 
     if timezone in pytz.all_timezones:
-        db.change_timezone(message.author.id, timezone)
+        db.change_timezone(db_connection, message.author.id, timezone)
         m1 = f'Your timezone has been set to ``{timezone}``. \n'
         await message.channel.send(m1)
         return
@@ -87,8 +87,11 @@ or your UTC offset (like ``+3``/``-3``)'''
     return
 
 
-async def when(message, msg):
-    user = db.get_user(message.author.id)
+async def when(message, msg, db_connection):
+    user = db.get_user(db_connection, message.author.id)
+    if user is None:
+        db.create_user(db_connection, message.author.id, 'Etc/GMT0')
+        user = db.get_user(db_connection, message.author.id)
 
     if len(msg) < 2:
         await message.channel.send('Please specify a time')
@@ -109,8 +112,8 @@ async def when(message, msg):
 
     datetime_object = th.seconds_to_datetime(seconds_since_epoch)
     datetime_object = th.localize_datetime(datetime_object, user[1])
-    timedelta_string = th.seconds_to_string(distance)
-    datetime_string = th.datetime_to_timestring(datetime_object)
+    timedelta_string = th.timedelta_seconds_to_string(distance)
+    datetime_string = datetime_object.ctime()
     m = '''This timestamp is in ``{0}`` which is the ``{1}``'''\
     .format(timedelta_string, datetime_string)
 
