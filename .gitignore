@@ -1,4 +1,4 @@
-
 basic_config.json
-
 database_config.json
+web/secret
+**__pycache__**

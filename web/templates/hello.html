@@ -1,0 +1,56 @@
+<html>
+    <head>
+        <title> Rem2 </title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <!-- please forgive me for doing inline styling this is a tiny application and i can't be bothered setting up static file serving in flask -->
+        <style>
+            body { font-family: sans-serif; }
+            .superheader {display: flex;}
+            .header {
+                flex-grow: 1;
+                background-color: darkgrey;
+                color: white;
+                margin: 0; padding: 0.5em 2em;
+            }
+            .flash {margin: 0 0.5em; padding: 0.5em 2em;}
+            .success {background-color: #44cc44}
+            .failure {background-color: #cc4444}
+            .timers th,td {
+                border: 1px solid black;
+                padding: 0.1em 0.5em;
+            }
+            .timers {
+                left: 6px; /*how much it takes to align the content with the header*/
+                position: absolute;
+            }
+            td > input { width: 100% }
+        </style>
+    </head>
+    <body>
+        <div class="superheader">
+            <span class="header">
+                rem2 | {% if "username" in session %} logged in as {{session["username"]}} | <a href="/projects/rem2/logout">log out</a> {% else %} not logged in | <a href="/projects/rem2/login">login</a> {% endif %}
+            </span>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <span class="flash {{ category }}">{{ message }}</span>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        {% if "username" in session %}
+            <table class="timers">
+                <tr> <th>#</th> <th>message</th> <th>created</th> <th>triggered</th> <th>message link</th> </tr>
+                {% for timer in timers %}
+                    <tr>{% for i in timer %} <td>{{i}}</td> {% endfor %}</tr>
+                {% endfor %}
+                <tr><form method="post" action="/projects/rem2/new_timer">
+                    <td>new</td> <td><input type="text" name="label" id="label" required></td> <td>now</td> <td><input name="time" id="time" required></td> <td><input type="submit" value="add timer"></td>
+                </form></tr>
+            </table>
+            <script> flatpickr("#time", {"enableTime": "true", "enableSeconds": "true"}) </script>
+        {% endif %}
+    </body>
+</html>
