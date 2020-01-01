@@ -12,11 +12,11 @@ def connect():
     return conn
 
 
-# This function should only be called when going into a new envoirment
+# This function should only be called when going into a new environment
 def create_tables(conn):
     commands = (
         '''
-        DROP TABLE users;
+        DROP TABLE users CASCADE;
         ''',
         '''
         DROP TABLE timers; 
@@ -35,7 +35,8 @@ def create_tables(conn):
             label text,
             timestamp_created double precision,
             timestamp_triggered double precision,
-            author_id bigint REFERENCES users(id) ON DELETE CASCADE,
+            author_id bigint REFERENCES users(id),
+            receiver_id bigint REFERENCES users(id) ON DELETE CASCADE,
             guild bigint,
             channel bigint,
             message bigint,
@@ -87,7 +88,7 @@ def get_timers(conn, user_id, all=False):
         command = '''SELECT * from timers'''
         cur.execute(command)
     else:
-        command = '''SELECT * FROM timers WHERE author_id = %s'''
+        command = '''SELECT * FROM timers WHERE receiver_id = %s'''
         cur.execute(command, (session['id'],))
     rows = cur.fetchall()
     cur.close()
@@ -95,12 +96,29 @@ def get_timers(conn, user_id, all=False):
 
 # created_time and target_time have to be already entered in seconds away from the epoch
 # created_time is entered instead of computed to not have inaccuracies caused by latency
-def create_timer(conn, label, created_time, target_time):
+def create_timer(conn, label, timestamp_created, timestamp_triggered, author_id, receiver_id=0, guild_id=0, channel_id=0, message_id=0):
+    if receiver_id == 0:
+        receiver_id = author_id
     cur = conn.cursor()
-    command = '''INSERT INTO timers(label, timestamp_created, timestamp_triggered, author_id) VALUES (%s, %s, %s, %s);'''
-    cur.execute(command, (label, created_time, target_time, session['id']))
+    command = '''INSERT INTO timers(label,
+    timestamp_created,
+    timestamp_triggered,
+    author_id,
+    receiver_id,
+    guild,
+    channel,
+    message) 
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s);'''
+
+    cur.execute(command,
+    (label,
+    timestamp_created,
+    timestamp_triggered,
+    author_id,
+    receiver_id,
+    guild_id,
+    channel_id,
+    message_id))
+
     conn.commit()
     cur.close()
-
-if __name__ == '__main__':
-    create_tables()

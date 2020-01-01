@@ -1,6 +1,8 @@
 import json
 from lib.common import parse_config
 
+from discord import DMChannel, TextChannel
+
 config = parse_config('discord')
 
 def parse_message(content):
@@ -35,3 +37,7 @@ def parse_message(content):
 				msg[-1] += letter
 
 	return msg
+
+
+def is_dm(channel):
+	return isinstance(channel, DMChannel)
