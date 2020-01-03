@@ -3,6 +3,7 @@ from lib.common import parse_config
 from lib import database
 from bot.util import parse_message
 from bot.commands import execute_command
+from bot.trigger_timer import main_loop
 
 client = discord.Client()
 config = parse_config('discord')
@@ -14,6 +15,7 @@ async def on_ready():
     print('------------------')
     print(f'bot ready {client.user.name}')
     print('------------------')
+    await main_loop(client, db_connection)
 
 
 @client.event

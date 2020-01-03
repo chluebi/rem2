@@ -153,14 +153,16 @@ async def set_personal_reminder(message, msg, db_connection):
     if is_dm(channel):
         guild = 0
     else:
-        guild = message.channel.guild
+        guild = message.channel.guild.id
+
+    channel = channel.id
 
     m = '''Timer **{0}** set for you **{1}** which is in **{2}**'''\
     .format(msg[2], datetime_string, timedelta_string)
 
     db.create_timer(db_connection, msg[2], time.time(), seconds_since_epoch, \
-     message.author.id, receiver_id=message.author.id, guild_id=guild.id, \
-     channel_id=channel.id, message_id=message.id)
+     message.author.id, receiver_id=message.author.id, guild_id=guild, \
+     channel_id=channel, message_id=message.id)
 
     await message.channel.send(m)
 

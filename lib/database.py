@@ -89,7 +89,16 @@ def get_timers(conn, user_id, all=False):
         cur.execute(command)
     else:
         command = '''SELECT * FROM timers WHERE receiver_id = %s'''
-        cur.execute(command, (session['id'],))
+        cur.execute(command, (user_id,))
+    rows = cur.fetchall()
+    cur.close()
+    return rows
+
+
+def get_timers_threshold(conn, threshold):
+    cur = conn.cursor()
+    command = '''SELECT * FROM timers WHERE timestamp_triggered < %s'''
+    cur.execute(command, (threshold,))
     rows = cur.fetchall()
     cur.close()
     return rows
@@ -121,4 +130,11 @@ def create_timer(conn, label, timestamp_created, timestamp_triggered, author_id,
     message_id))
 
     conn.commit()
+    cur.close()
+
+
+def delete_timer(conn, id):
+    cur = conn.cursor()
+    command = '''DELETE FROM timers WHERE id = %s'''
+    cur.execute(command, (id,))
     cur.close()
