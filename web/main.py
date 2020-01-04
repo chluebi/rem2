@@ -42,10 +42,10 @@ def new_timer():
     failed = False
     #try: 
     util.create_timer(request.form.get('label'), request.form.get('time'))
-    #except Exception as e: 
-    #    print(e)
-    #    flash('Could not create timer.', 'failure')
-    #    failed = True
+    except Exception as e: 
+        print(e)
+        flash('Could not create timer.', 'failure')
+        failed = True
     if not failed: flash('Created timer!', 'success')
     return redirect(util.proxy_url_for('hello'))
 
