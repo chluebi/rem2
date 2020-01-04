@@ -22,6 +22,6 @@ async def on_ready():
 async def on_message(message):
     p_message = parse_message(message.content)
     if p_message is not None:
-        await execute_command(message, p_message, db_connection)
+        await execute_command(client, message, p_message, db_connection)
 
 client.run(config['token'])

@@ -1,8 +1,10 @@
-import asyncio
+
 import lib.database as db
 from lib.time_handle import seconds_to_datetime
+from lib.common import parse_config, get_message_link
+
 import time
-from lib.common import parse_config
+import asyncio
 
 config = parse_config('discord')
 interval = config['interval']
@@ -32,10 +34,7 @@ async def trigger_timer(delay, client, db_connection, id, label, timestamp_creat
 		return True, id
 
 	receiver = client.get_user(receiver_id)
-	if guild == 0:
-		created_message_link = f'https://discordapp.com/channels/@me/{receiver_id}/{message}'
-	else:
-		created_message_link = f'https://discordapp.com/channels/{guild}/{channel}/{message}'
+	created_message_link = get_message_link(guild, channel, message, receiver_id)
 
 	created_time_string = seconds_to_datetime(timestamp_created).ctime()
 	triggered_time_string = seconds_to_datetime(timestamp_created).ctime()

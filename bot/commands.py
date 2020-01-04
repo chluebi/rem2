@@ -1,15 +1,18 @@
 import lib.database as db
-from lib.common import parse_config
+from lib.common import parse_config, get_message_link
 from bot.util import is_dm
 import lib.time_handle as th
+
 import time
 import pytz
+from math import floor
+
 
 config = parse_config('discord')
 
 commands = []
 
-async def execute_command(message, msg, db_connection):
+async def execute_command(client, message, msg, db_connection):
     command = None
     for c in commands:
         if c.name == msg[0] or msg[0] in c.aliases:
@@ -21,7 +24,7 @@ async def execute_command(message, msg, db_connection):
         return
 
     await message.add_reaction('✅')
-    await command.function(message, msg, db_connection)
+    await command.function(client, message, msg, db_connection)
 
 
 def register_command(function, name=None, aliases=[]):
@@ -37,7 +40,7 @@ class Command:
 
 
 
-async def set_timezone(message, msg, db_connection):
+async def set_timezone(client, message, msg, db_connection):
     user = db.get_user(db_connection, message.author.id)
     if user is None:
         db.create_user(db_connection, message.author.id, 'Etc/GMT0')
@@ -81,7 +84,7 @@ or your UTC offset (like ``+3``/``-3``)'''
     return
 
 
-async def when(message, msg, db_connection):
+async def when(client, message, msg, db_connection):
     user = db.get_user(db_connection, message.author.id)
     if user is None:
         db.create_user(db_connection, message.author.id, 'Etc/GMT0')
@@ -114,8 +117,65 @@ async def when(message, msg, db_connection):
     await message.channel.send(m)
 
 
-# WIP
-async def set_personal_reminder(message, msg, db_connection):
+async def timer_list(client, message, msg, db_connection):
+    user = db.get_user(db_connection, message.author.id)
+    if user is None:
+        m = 'You don\'t have any timers set yet.'
+        await message.channel.send(m)
+
+    timers = db.get_timers(db_connection, message.author.id)
+    # timers = id | label | timestamp_created | timestamp_triggered | author_id | receiver_id | guild | channel | message
+    # rows = label | timestamp_created | timestamp_triggered | author_id | receiver_id | link
+    row = '| {0} | {1} | {2} | {3} | {4} |\n'
+    
+
+    def make_length(string, l):
+        if len(string) >= l:
+            return string[:l]
+
+        white = ''.join([' ' for _ in range(floor((l - len(string))/2))])
+        extrawhitespace = ' ' if divmod(l - len(string), 2)[1] == 1 else ''
+        return white + extrawhitespace + string + white
+
+    row_data = []
+    for t in timers:
+        label = str(t[1])
+        timestamp_created = time.ctime(t[2])
+        timestamp_triggered = time.ctime(t[3])
+        author = str(client.get_user(t[4]))
+        receiver = str(client.get_user(t[5]))
+        #link = make_length(get_message_link(t[6], t[7], t[8], t[4]), 70)
+        row_data.append((label, timestamp_created, timestamp_triggered, author, receiver))
+
+    max_lens = []
+    max_lens.append(max([len(i[0]) for i in row_data]))
+    max_lens.append(max([len(i[1]) for i in row_data]))
+    max_lens.append(max([len(i[2]) for i in row_data]))
+    max_lens.append(max([len(i[3]) for i in row_data]))
+    max_lens.append(max([len(i[4]) for i in row_data]))
+
+    s = sum(max_lens) + len(max_lens) * 3
+
+    rows = []
+    rows.append(''.join(['-' for _ in range(s)]) + '\n')
+
+    for t in row_data:
+        label = make_length(t[0], max_lens[0])
+        timestamp_created = make_length(t[1], max_lens[1])
+        timestamp_triggered = make_length(t[2], max_lens[2])
+        author = make_length(t[3], max_lens[3])
+        receiver = make_length(t[4], max_lens[4])
+        r = row.format(label, timestamp_created, timestamp_triggered, author, receiver)
+        rows.append(r)
+
+    rows.append(''.join(['-' for _ in range(s)]) + '\n')
+
+    m = '''```\n{}```'''.format(''.join(rows))
+
+    await message.channel.send(m)
+
+
+async def set_personal_reminder(client, message, msg, db_connection):
     user = db.get_user(db_connection, message.author.id)
     if user is None:
         m = 'Your timezone isn\'t set yet. Run ``{} timezone`` to set it.'.format(config['prefix'])
@@ -167,7 +227,9 @@ async def set_personal_reminder(message, msg, db_connection):
     await message.channel.send(m)
 
 
+
 #register_command(set_personal_reminder, name='personal', aliases=['me'])
 register_command(set_timezone, name='timezone', aliases=['tz'])
 register_command(when, name='when', aliases=[])
 register_command(set_personal_reminder, name='me', aliases=['m', 'myself'])
+register_command(timer_list, name='list', aliases=['l'])
