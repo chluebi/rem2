@@ -3,6 +3,7 @@ from flask import session, request, g, url_for
 import requests
 import datetime
 import psycopg2
+from lib import database
 
 with open("secret") as f:
     l = f.read().split(" ")
@@ -23,31 +24,16 @@ def proxy_url_for(f): #The site runs behind a Caddy proxy, so is technically run
     return url_for(f, _scheme="https", _external=True)
 
 #Database setup
-def db_connect(): return psycopg2.connect(host="localhost", port=5432, database="rem", user="rem")
 def db():
     if 'db' not in g:
-        g.db = db_connect()
+        g.db = database.connect()
     return g.db
 
 #Database interaction
-def get_user():
-	cur = db().cursor()
-	command = '''SELECT * FROM users WHERE id = %s'''
-	cur.execute(command, (session["id"],))
-	row = cur.fetchone()
-	cur.close()
-	return row
+def get_user(): return database.get_user(db(), session["id"])
 
 def get_timers(all=False):
-    cur = db().cursor()
-    if all:
-        command = '''SELECT * from timers'''
-        cur.execute(command)
-    else:
-        command = '''SELECT * FROM timers WHERE author_id = %s'''
-        cur.execute(command, (session["id"],))
-    rows = cur.fetchall()
-    cur.close()
+    rows = database.get_timers(db(), session["id"], all)
     timers = []
     tz = get_user()[1]
     for i in rows:
@@ -59,29 +45,16 @@ def get_timers(all=False):
         timers.append([i[0], i[1], created, triggered, link])
     return timers
 
-def create_user():
-	cur = db().cursor()
-	command = '''INSERT INTO users(id, timezone) VALUES (%s, %s);'''
-	cur.execute(command, (session["id"], "UTC"))
-	db().commit()
-	cur.close()
+def create_user(): create_user(db(), (session["id"], "UTC"))
 
 def create_timer(label, at):
-    cur = db().cursor()
     time = detimezonify(datetime.datetime.fromisoformat(at), get_user()[1])
     command = '''INSERT INTO timers(label, timestamp_created, timestamp_triggered, author_id) VALUES (%s, %s, %s, %s);'''
     cur.execute(command, (label, datetime.datetime.utcnow().timestamp(), time.timestamp(), session["id"]))
     db().commit()
     cur.close()
 
-def update_timezone(timezone):
-	cur = g.cursor()
-	command = '''UPDATE users
-                SET user_timezone = %s
-                WHERE user_id = %s;'''
-	cur.execute(command, (timezone, session["id"]))
-	db().commit()
-	cur.close()
+def update_timezone(timezone): database.update_timezone(db(), session["id"], timezone)
 
 
 #OAuth stuff
