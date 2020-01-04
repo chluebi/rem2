@@ -30,7 +30,7 @@
     <body>
         <div class="superheader">
             <span class="header">
-                rem2 | {% if "username" in session %} logged in as {{session["username"]}} | <a href="/projects/rem2/logout">log out</a> {% else %} not logged in | <a href="/projects/rem2/login">login</a> {% endif %}
+                rem2 | {% if "access_token" in session %} logged in as {{session["username"]}} | <a href="/projects/rem2/logout">log out</a> {% else %} not logged in | <a href="/projects/rem2/login">login</a> {% endif %}
             </span>
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -40,7 +40,7 @@
                 {% endif %}
             {% endwith %}
         </div>
-        {% if "username" in session %}
+        {% if "access_token" in session %}
             <table class="timers">
                 <tr> <th>#</th> <th>message</th> <th>created</th> <th>triggered</th> <th>message link</th> </tr>
                 {% for timer in timers %}

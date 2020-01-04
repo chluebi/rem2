@@ -1,5 +1,3 @@
-
-web/secret
 **__pycache__**
 configs/discord_config.json
 configs/database_config.json

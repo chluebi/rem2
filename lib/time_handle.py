@@ -142,7 +142,6 @@ def timepoint_string_to_seconds(timestring, timezone):
         raise Exception('Not a valid format')
     return calendar.timegm(target_time)
 
-# there is some bug which needs us to us local time instead of gmt here, don't ask
 def seconds_to_datetime(seconds):
     gmt = datetime.datetime.utcfromtimestamp(seconds)
     return gmt

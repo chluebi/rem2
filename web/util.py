@@ -3,21 +3,14 @@ from flask import session, request, g, url_for
 import requests
 import datetime
 import psycopg2
-from lib import database
+from lib import common, time_handle, database
 
-with open('secret') as f:
-    l = f.read().split(' ')
-    CLIENT_SECRET = l[0]
+config = common.parse_config("web")
 
 DATETIME_FORMAT = '%d/%m/%y %H:%M:%S'
 
-#Wibbly wobbly timey wimey
-def detimezonify(base, to):
-    target = timezone(to)
-    return target.localize(base).astimezone(utc)
-def timezonify(base, frm):
-    fromm = timezone(frm)
-    return utc.localize(base).astimezone(fromm)
+def timeywimeicate(secs, tz): #seconds to localized, strf'd time
+    return time_handle.seconds_to_datetime(time_handle.delocalize_seconds(secs, tz)).strftime(DATETIME_FORMAT)
 
 #Web stuff
 def proxy_url_for(f): #The site runs behind a Caddy proxy, so is technically running HTTP while displaying as HTTPS, so the urls url_for generates are HTTPS and thus breaks if the HTTP redirection isn't working (which it only isn't for Raine)
@@ -32,41 +25,31 @@ def db():
 #Database interaction
 def get_user(): return database.get_user(db(), session["id"])
 
-def get_timers(all=False):
+def get_timers(all=False): 
     rows = database.get_timers(db(), session["id"], all)
-	cur = db().cursor()
-	command = '''SELECT * FROM users WHERE id = %s'''
-	cur.execute(command, (session['id'],))
-	row = cur.fetchone()
-	cur.close()
-	return row
-
-def parse_timers_web(rows, timezone):
     timers = []
-    tz = timezone
+    tz = get_user()[1]
     for i in rows:
-        created = timezonify(datetime.datetime.fromtimestamp(i[2]), tz).strftime(DATETIME_FORMAT)
-        triggered = timezonify(datetime.datetime.fromtimestamp(i[3]), tz).strftime(DATETIME_FORMAT)
+        created = timeywimeicate(i[2], tz)
+        triggered = timeywimeicate(i[3], tz)
         if i[5] == 0: rows[5] = '@me'
-        if i[6]: link = f'<a href='https://discordapp.com/channels/{i[5]}/{i[6]}/{i[7]}'> message </a>'
+        if i[6]: link = f'<a href="https://discordapp.com/channels/{i[5]}/{i[6]}/{i[7]}"> message </a>'
         else: link = 'created in web'
         timers.append([i[0], i[1], created, triggered, link])
     return timers
 
-def create_user(): create_user(db(), (session["id"], "UTC"))
+def create_user(): database.create_user(db(), session["id"], "UTC")
 
 def create_timer(label, at):
-    time = detimezonify(datetime.datetime.fromisoformat(at), get_user()[1])
-    command = '''INSERT INTO timers(label, timestamp_created, timestamp_triggered, author_id) VALUES (%s, %s, %s, %s);'''
-    cur.execute(command, (label, datetime.datetime.utcnow().timestamp(), time.timestamp(), session['id']))
-    db().commit()
-    cur.close()
+    time = time_handle.delocalize_datetime(datetime.datetime.fromisoformat(at), get_user()[1])
+    #TODO: get time from request object?
+    database.create_timer(db(), label, datetime.datetime.utcnow().timestamp(), time.timestamp(), session['id'])
 
 def update_timezone(timezone): database.update_timezone(db(), session["id"], timezone)
 
 #OAuth stuff
 def retrieve_user(store_in_session=True):
-    ur = requests.get('https://discordapp.com/api/users/@me', headers={'Authorization': f'Bearer {session['access_token']}'})
+    ur = requests.get('https://discordapp.com/api/users/@me', headers={'Authorization': f"Bearer {session['access_token']}"})
     if store_in_session:
         session['username'] = ur.json()['username']
         session['id'] = ur.json()['id']
@@ -74,10 +57,10 @@ def retrieve_user(store_in_session=True):
 
 def get_tokens(refresh=False):
     data = {
-        'client_id': '658749181300703252',
-        'client_secret': CLIENT_SECRET,
+        'client_id': config["client_id"],
+        'client_secret': config["client_secret"],
         'grant_type': 'refresh_token' if refresh else 'authorization_code',
-        'redirect_uri': 'https://dittoslash.uk/projects/rem2/oauth_redirect',
+        'redirect_uri': config["redirect_uri"],
         'scope': 'identify'
     }
     if refresh: data['refresh_token'] = session['refresh_token']
