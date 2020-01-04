@@ -1,5 +1,6 @@
 import lib.database as db
 from lib.common import parse_config
+from bot.util import is_dm
 import lib.time_handle as th
 import time
 import pytz
@@ -34,13 +35,6 @@ class Command:
         self.aliases = aliases
         commands.append(self)
 
-# WIP
-async def set_personal_reminder(message, msg, db_connection):
-    user = db.get_user(message.author.id)
-    if user is None:
-        m = 'Your timezone isn\'t set yet. Run ``{} timezone`` to set it.'.format(config['prefix'])
-        db.create_user(message.author.id, 'Etc/GMT0')
-        await message.channel.send(m)
 
 
 async def set_timezone(message, msg, db_connection):
@@ -120,7 +114,60 @@ async def when(message, msg, db_connection):
     await message.channel.send(m)
 
 
+# WIP
+async def set_personal_reminder(message, msg, db_connection):
+    user = db.get_user(db_connection, message.author.id)
+    if user is None:
+        m = 'Your timezone isn\'t set yet. Run ``{} timezone`` to set it.'.format(config['prefix'])
+        db.create_user(db_connection, message.author.id, 'Etc/GMT0')
+        await message.channel.send(m)
+        return
+
+    if len(msg) < 2:
+        await message.channel.send('Please specify a time')
+        return
+
+    if len(msg) < 3:
+        msg.append('timer')
+
+    try:
+        distance = th.timedelta_string_into_seconds(msg[1])
+        seconds_since_epoch = time.time() + distance
+    except:
+        try:
+            seconds_since_epoch = th.timepoint_string_to_seconds(msg[1], user[1])
+            seconds_since_epoch = th.localize_seconds(seconds_since_epoch, user[1])
+            distance = seconds_since_epoch - time.time()
+        except Exception as e:
+            await message.channel.send('''Error occured: ```{}``` 
+                Be sure to use this format: ``{} when``'''.format(e, config['prefix']))
+            return
+
+    datetime_object = th.seconds_to_datetime(seconds_since_epoch)
+    datetime_object = th.localize_datetime(datetime_object, user[1])
+    timedelta_string = th.timedelta_seconds_to_string(distance)
+    datetime_string = datetime_object.ctime()
+
+    channel = message.channel
+
+    if is_dm(channel):
+        guild = 0
+    else:
+        guild = message.channel.guild.id
+
+    channel = channel.id
+
+    m = '''Timer **{0}** set for you **{1}** which is in **{2}**'''\
+    .format(msg[2], datetime_string, timedelta_string)
+
+    db.create_timer(db_connection, msg[2], time.time(), seconds_since_epoch, \
+     message.author.id, receiver_id=message.author.id, guild_id=guild, \
+     channel_id=channel, message_id=message.id)
+
+    await message.channel.send(m)
+
 
 #register_command(set_personal_reminder, name='personal', aliases=['me'])
 register_command(set_timezone, name='timezone', aliases=['tz'])
 register_command(when, name='when', aliases=[])
+register_command(set_personal_reminder, name='me', aliases=['m', 'myself'])

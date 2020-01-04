@@ -1,5 +1,7 @@
 {
 	"prefix":"rem",
 	"invite":"",
-	"token":""
+	"token":"",
+	"interval":10,
+	"timezone_list":"https://pastebin.com/hfJuc9GP"
 }
