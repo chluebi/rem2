@@ -1,14 +1,16 @@
-
 import time
 import datetime
 import calendar
 import pytz
 
 
-NUMS = ['0','1','2','3','4','5','6','7','8','9','.']
-
-
+# This horribly long function takes in a string like "3h 20m"
+# and returns the value of it in seconds
+#
+# It achieves this magic by what experts call
+# "a for loop and a bunch of booleans"
 def timedelta_string_into_seconds(timestring):
+    NUMS = ['0','1','2','3','4','5','6','7','8','9','.']
     time_values = {'s':1,
                    'sec':1,
                    'm':60,
@@ -56,14 +58,8 @@ def timedelta_string_into_seconds(timestring):
 
     return endsum
 
-def timepoint_string_to_seconds(timestring, timezone):
-    target_time = strptime_list(timestring, timezone)
-    if target_time is None:
-        raise Exception('Not a valid format')
-    return calendar.timegm(target_time)
-
-
-def seconds_to_string(seconds):
+# Does the opposite of the function above
+def timedelta_seconds_to_string(seconds):
     time_values = {'year': 3600 * 24 * 365,
                    'month': 3600 * 24 * 31,
                    'week': 3600 * 24 * 7,
@@ -95,6 +91,7 @@ def seconds_to_string(seconds):
     return endstring
 
 
+# Tries a lot of different formats to find one that sticks
 def strptime_list(timestring, timezone):
     try:
         return time.strptime(timestring, '%Y')
@@ -119,6 +116,8 @@ def strptime_list(timestring, timezone):
     try:
         c = time.gmtime(delocalize_seconds(time.time(), timezone))
         end = time.strptime(f'{c.tm_year}.{c.tm_mon}.{c.tm_mday} {timestring}', '%Y.%m.%d %H:%M')
+        # if the specified time has already passed today,
+        # we just get the same point in time but the next day
         if calendar.timegm(end) < delocalize_seconds(time.time(), timezone):
             end = time.gmtime(calendar.timegm(end) + 3600*24)
         return end
@@ -127,6 +126,8 @@ def strptime_list(timestring, timezone):
     try:
         c = time.gmtime(delocalize_seconds(time.time(), timezone))
         end = time.strptime(f'{c.tm_year}.{c.tm_mon}.{c.tm_mday} {timestring}', '%Y.%m.%d %H:%M:%S')
+        # if the specified time has already passed today,
+        # we just get the same point in time but the next day
         if calendar.timegm(end) < delocalize_seconds(time.time(), timezone):
             end = time.gmtime(calendar.timegm(end) + 3600*24)
         return end
@@ -134,33 +135,18 @@ def strptime_list(timestring, timezone):
         pass
 
 
-def datetime_to_timestring(datetime_object):
-    return datetime_object.ctime()
-
-
-def datetime_to_seconds(datetime_object):
-    return (datetime_object-datetime.datetime(1970,1,1)).total_seconds()
-
+# calls the function above, but with better verbose output
+def timepoint_string_to_seconds(timestring, timezone):
+    target_time = strptime_list(timestring, timezone)
+    if target_time is None:
+        raise Exception('Not a valid format')
+    return calendar.timegm(target_time)
 
 def seconds_to_datetime(seconds):
-    local = datetime.datetime.fromtimestamp(seconds)
     gmt = datetime.datetime.utcfromtimestamp(seconds)
-    return local
+    return gmt
 
-
-def time_to_seconds(time_struct):
-    return time.mktime(time_struct)
-
-
-def seconds_to_time(seconds):
-    return time.gmtime(seconds)
-
-
-def localize_datetime(datetime_object, timezone):
-    timezone = pytz.timezone(timezone)
-    return datetime_object.astimezone(timezone)
-
-
+# puts an amount of seconds from one timezone into POSIX
 def delocalize_seconds(seconds, timezone):
     timezone = pytz.timezone(timezone)
     datetime_object = seconds_to_datetime(seconds)
@@ -168,6 +154,7 @@ def delocalize_seconds(seconds, timezone):
     return seconds + offset
 
 
+# puts POSIX into timezone
 def localize_seconds(seconds, timezone):
     timezone = pytz.timezone(timezone)
     datetime_object = seconds_to_datetime(seconds)
@@ -175,11 +162,12 @@ def localize_seconds(seconds, timezone):
     return seconds - offset
 
 
-if __name__ == '__main__':
-    distance = timedelta_string_into_seconds('2s')
-    point = time.time() + distance
-    datetime_object = seconds_to_datetime(point)
-    print(pytz.timezone('Europe/London').utcoffset(datetime_object))
-    datetime_object = localize_datetime(datetime_object, 'Europe/London')
-    datetime_string = datetime_to_timestring(datetime_object)
-    print(datetime_object)
+# same as above but for datetime objects
+def localize_datetime(datetime_object, timezone):
+    timezone = pytz.timezone(timezone)
+    return pytz.utc.localize(datetime_object).astimezone(timezone)
+
+
+def delocalize_datetime(datetime_object, timezone):
+    timezone = pytz.timezone(timezone)
+    return timezone.localize(datetime_object).astimezone(timezone)
