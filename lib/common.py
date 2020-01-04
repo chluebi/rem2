@@ -8,7 +8,7 @@ def parse_config(name):
 
 def get_message_link(guild_id, channel_id, message_id, receiver_id):
 	if guild_id == 0:
-		created_message_link = f'https://discordapp.com/channels/@me/{receiver_id}/{message_id}'
+		created_message_link = f'https://discordapp.com/channels/@me/{channel_id}/{message_id}'
 	elif message_id == 0:
 		created_message_link = 'Timer created in Web.'
 	else:
