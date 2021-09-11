@@ -40,9 +40,8 @@ def logout():
 @app.route('/projects/rem2/new_timer', methods=['POST'])
 def new_timer():
     failed = False
-    #try: 
-    util.create_timer(request.form.get('label'), request.form.get('time'))
-    except Exception as e: 
+    try: util.create_timer(request.form.get('label'), request.form.get('time'))
+    except Exception as e:
         print(e)
         flash('Could not create timer.', 'failure')
         failed = True
