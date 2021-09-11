@@ -5,7 +5,8 @@ from bot.util import parse_message
 from bot.commands import execute_command
 from bot.trigger_timer import main_loop
 
-client = discord.Client()
+intents = discord.Intents.all()
+client = discord.Client(Intents=intents)
 config = parse_config('discord')
 db_connection = database.connect()
 
