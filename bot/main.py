@@ -6,7 +6,7 @@ from bot.commands import execute_command
 from bot.trigger_timer import main_loop
 
 intents = discord.Intents.all()
-client = discord.Client(Intents=intents)
+client = discord.Client(intents=intents)
 config = parse_config('discord')
 db_connection = database.connect()
 
